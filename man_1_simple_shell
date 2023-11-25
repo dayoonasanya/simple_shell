@@ -1,0 +1,182 @@
+.TH SIMPLE_SHELL  "0x15. C - Simple Shell"
+.SH NAME
+.B shellby\fR \- a basic UNIX command interpreter
+.SH SYNOPSIS
+.B shellby\fR [\fIfilename\fR]
+.SH DESCRIPTION
+.B Shellby\fR is a straightforward UNIX command interpreter that processes commands from either a file or standard input and executes them.
+
+.B Invocation
+.in +2n
+\fBShellby\fR can be used interactively or non-interactively.
+When \fBshellby\fR is used with standard input not connected to a terminal, it reads and executes commands received in order.
+
+If \fBshellby\fR is used with standard input connected to a terminal (checked by \fIisatty(3)\fR), it opens an \fIinteractive\fR shell.
+In interactive mode, \fBshellby\fR displays the prompt \fI$ \fR when ready to read a command.
+
+Alternatively, if command line arguments are provided, \fBshellby\fR considers the first argument as a file containing commands to execute.
+The file should have one command per line.
+.B Shellby\fR executes each command in the file sequentially before exiting.
+.in
+
+.B Environment
+.in +2n
+Upon startup, \fBshellby\fR receives and copies the environment from the parent process.
+This \fBenvironment\fR is an array of \fIname-value\fR strings describing variables in the format \fINAME=VALUE\fR.
+.in
+
+.B Command Execution
+.in +2n
+After receiving a command, \fBshellby\fR tokenizes it into words using \fB" "\fR as a delimiter.
+The first word is considered the command, and the rest are its arguments.
+.B Shellby\fR then takes the following actions:
+
+.RS
+1. If the first character of the command is not a slash (\fI/ \fR) or dot (\fI.\fR), the shell checks if it is a built-in command.
+If a built-in command exists with that name, it is executed.
+.RE
+
+.RS
+2. If the first character of the command is not a slash (\fI/ \fR), dot (\fI.\fR), or a built-in command, \fBshellby\fR searches each directory in the
+\fBPATH\fR environmental variable for an executable file with that name.
+.RE
+
+.RS
+3. If the first character of the command is a slash (\fI/ \fR) or dot (\fI.\fR) or the previous searches were successful,
+the shell executes the named program with any remaining arguments in a separate execution environment.
+.RE
+
+.B Exit Status
+.in +2n
+.B Shellby\fR returns the exit status of the last executed command.
+A syntax error results in a non-zero exit status, with zero indicating success.
+
+If a command is not found, the return status is 127; if found but not executable, the return status is 126.
+
+All built-ins return zero on success and one or two on incorrect usage, along with a corresponding error message.
+.in
+
+.B Signals
+.in +2n
+In interactive mode, \fBshellby\fR ignores \fBCtrl+c\fR but exits on end-of-file (\fBCtrl+d\fR).
+.in
+
+.B Variable Replacement
+.in +2n
+\fBShellby\fR interprets the \fI$\fR character for variable replacement:
+
+.RS
+.B $ENV_VARIABLE\fR	\fIENV_VARIABLE\fR is replaced with its value.
+.RE
+
+.RS
+.B $?\fR			\fI?\fR is replaced with the return value of the last executed program.
+.RE
+
+.RS
+.B $$\FR			The second \fI$\fR is replaced with the current process ID.
+.RE
+
+.B Comments
+.in +2n
+\fBShellby\fR ignores lines and characters preceded by a \fI#\fR.
+.in
+
+.B Operators
+.in +2n
+
+.RS
+.B ;\fR - Command separator
+.RS
+Commands separated by a \fI;\fR are executed sequentially.
+.RE
+
+.B &&\fR - AND logical operator
+.RS
+.I command1\fR && \fIcommand2\fR: \fIcommand2\fR is executed only if \fIcommand1\fR returns an exit status of zero.
+.RE
+
+.B ||\fR - OR logical operator
+.RS
+.I command1\fR || \fIcommand2\fR: \fIcommand2\fR is executed only if \fIcommand1\fR returns a non-zero exit status.
+.RE
+
+The \fI&&\fR and \fI||\fR operators have equal precedence, followed by \fI;\fR.
+.RE
+
+.B Shellby Builtin Commands
+.in +2n
+
+.RS
+.B cd
+.RS
+Usage: .B cd [DIRECTORY]
+
+Changes the current directory to \fBDIRECTORY\fR.
+
+If no argument is given, it is interpreted as \fBcd $HOME\fR.
+
+If the argument is \fB-\fR, it is interpreted as \fBcd $OLDPWD\fR.
+
+The environment variables \fBPWD\fR and \fBOLDPWD\fR are updated after a directory change.
+.RE
+
+.B alias
+.RS
+Usage: \fBalias [NAME[='VALUE'] ...]\fR
+
+Manages aliases.
+
+.I alias\fR: Prints all aliases, one per line, in the form \fINAME='VALUE'\fR.
+
+.I alias NAME [NAME2 ...]\fR: Prints specific aliases \fINAME\fR, \fINAME2\fR, etc., one per line, in the form \fINAME='VALUE'\fR.
+
+.I alias NAME='VALUE' [...]\fR: Defines an alias for each \fINAME\fR with the provided \fIVALUE\fR.
+If \fIname\fR is already an alias, its value is replaced with \fIVALUE\fR.
+.RE
+
+.B exit
+.RS
+Usage: \fBexit [STATUS]\fR
+
+Exits the shell.
+
+The \fBSTATUS\fR argument is the integer used for shell exit.
+
+If no argument is given, it is interpreted as \fBexit 0\fR.
+.RE
+
+.B env
+.RS
+Usage: \fBenv\fR
+
+Prints the current environment.
+.RE
+
+.B setenv
+.RS
+Usage: \fBsetenv [VARIABLE] [VALUE]\fR
+
+Sets up a new environment variable or modifies an existing one.
+
+On failure, prints a message to \fBstderr\fR.
+.RE
+
+.B unsetenv
+.RS
+Usage: \fBunsetenv [VARIABLE]\fR
+
+Removes an environmental variable.
+
+On failure, prints a message to \fBstderr\fR.
+.RE
+.RE
+.in
+
+.SH SEE ALSO
+access(2), chdir(2), execve(2), _exit(2), exit(3), fflush(3), fork(2), free(3), isatty(3), getcwd(3), malloc(3), open(2), read(2), sh(1), signal(2), stat(2), wait(2), write(2)
+
+.B Shellby\fR emulates basic functionality of the \fBsh\fR shell.
+This man page is inspired by the corresponding man pages sh(1) and dash(1).
+.SH AUTHOR
+dayoonasanya & chifundo365
