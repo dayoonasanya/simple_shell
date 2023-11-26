@@ -5,7 +5,7 @@
 #define PROMPT_MSG "($) " /* Needed to work with signal */
 
 /* Resume from the unused attibute */
-#define UNUSED _attribute_((unused))
+#define UNUSED __attribute__((unused))
 
 /* buffer size for each read call in _get_line */
 
